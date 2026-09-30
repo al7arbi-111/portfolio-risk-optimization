@@ -25,6 +25,8 @@ Five US large caps from distinct sectors, daily closes 2021–2025 via `yfinance
 
 Equal weighting produced 20.6% annualised return at 15.7% volatility — below the volatility of *every individual holding*, including the least volatile (JNJ, 16.7%). Optimization raised the Sharpe ratio from 1.06 to 1.16.
 
+![Efficient frontier](frontier.png)
+
 The diversification comes from low cross-sector correlation: MSFT–JNJ and MSFT–XOM both sit at 0.08, against 0.63 for AAPL–MSFT. No pair is negatively correlated, so diversification reduces risk here without eliminating it.
 
 ### Out-of-sample (2024–2025)
@@ -37,6 +39,8 @@ Weights fitted on 2021–2023: **XOM 63.2%, MSFT 36.8%**, zero in the remaining 
 | Equal weight | **21.7%** | **13.9%** | **1.27** | −16.0% |
 
 Cumulative: **+32.3%** optimized vs **+51.0%** equal weight.
+
+![Out-of-sample performance](oos_performance.png)
 
 The optimizer underperformed on both axes — less return *and* more risk — while delivering no drawdown protection.
 
