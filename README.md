@@ -1,8 +1,8 @@
 # Portfolio Risk & Optimization Engine
 
-Mean-variance portfolio optimization applied to a five-stock equity portfolio, with an out-of-sample test against a naive equal-weight benchmark.
+Mean-variance portfolio optimization applied to a five-stock equity portfolio, with an out-of-sample test against a naive equal-weight benchmark, followed by implementation and testing of three standard remedies.
 
-**Headline result: the optimizer lost to equal weighting out of sample** — lower return, higher volatility, no reduction in drawdown.
+**Headline result: the optimizer lost to equal weighting out of sample, and none of the three proposed fixes recovered the gap.**
 
 ## Data
 
@@ -18,6 +18,7 @@ Five US large caps from distinct sectors, daily closes 2021–2025 via `yfinance
 4. Maximise the Sharpe ratio via SLSQP (`scipy.optimize.minimize`), long-only, weights summing to 1.
 5. Plot the efficient frontier over 5,000 randomly weighted portfolios.
 6. **Out-of-sample test:** fit weights on 2021–2023 only, hold them fixed, evaluate on 2024–2025.
+7. **Extension testing:** repeat with Ledoit-Wolf shrinkage, 30% weight caps, and monthly rolling re-optimisation.
 
 ## Results
 
@@ -46,25 +47,16 @@ The optimizer underperformed on both axes — less return *and* more risk — wh
 
 ## Why the optimizer failed
 
-- **Concentration.** Fitting on a window in which energy outperformed, the optimizer allocated 63% to a single name and excluded three holdings entirely, collapsing a five-sector portfolio into a two-name bet.
+- **Concentration.** Fitting on a window in which energy outperformed, the optimizer allocated 63% to a single name and excluded three holdings entirely, collapsing a five-sector portfolio into a two-name bet. XOM was genuinely the best risk-adjusted performer in-sample, so this was a correct response to the data provided — the failure is in the inputs, not the algorithm.
 - **Loss of diversification.** The 15.7% in-sample portfolio volatility was a product of low cross-sector correlations. Concentrating into MSFT and XOM discarded that, which is why the "optimized" portfolio was *more* volatile out of sample.
 - **Estimation error.** 752 observations is thin for estimating expected returns, and mean-variance weights are highly sensitive to those estimates. The optimizer treats noisy sample means as known parameters.
 - **Regime change.** The energy outperformance that drove the allocation did not persist. The optimizer extrapolates the estimation window and has no mechanism to anticipate this.
 
 This reproduces a documented finding: DeMiguel, Garlappi & Uppal (2009), *Optimal Versus Naive Diversification: How Inefficient is the 1/N Portfolio Strategy?*, **Review of Financial Studies** 22(5), which found naive 1/N allocation outperformed sample-based mean-variance optimization across fourteen datasets.
 
-## Limitations
+## Testing the proposed remedies
 
-- Single test window; the two lines are near-indistinguishable through 2024 and diverge only late, so the conclusion is sensitive to the test period chosen.
-- Five assets, US large-cap equities only.
-- No transaction costs or rebalancing — weights are set once and held.
-- Fixed 4% risk-free rate.
-
-## Possible extensions
-
-## Testing the proposed extensions
-
-The three fixes suggested above were implemented and tested on the same out-of-sample split: weights fitted on 2021–2023, evaluated on 2024–2025.
+Three standard fixes were implemented and tested on the same split: weights fitted on 2021–2023, evaluated on 2024–2025.
 
 | | Return | Volatility | Sharpe | Max drawdown |
 |---|---|---|---|---|
@@ -76,7 +68,7 @@ The three fixes suggested above were implemented and tested on the same out-of-s
 
 ![Extension comparison](extensions_comparison.png)
 
-**None of the three fixes beat equal weighting on a risk-adjusted basis.**
+**None of the three beat equal weighting on a risk-adjusted basis.**
 
 **Ledoit-Wolf shrinkage changed nothing.** The estimated shrinkage intensity was 0.021 — a 2% adjustment — and the resulting weights and performance were identical to the original to four significant figures. With five assets and 752 observations the sample covariance matrix is already adequately conditioned; shrinkage addresses covariance estimation error, while the instability here originates in the expected-return estimates, which the method does not touch.
 
@@ -84,14 +76,19 @@ The three fixes suggested above were implemented and tested on the same out-of-s
 
 **Rolling re-optimisation produced the highest return and no risk-adjusted improvement.** Monthly re-fitting on a trailing two-year window returned 28.79%, but at 19.55% volatility and a −21.15% drawdown, for a Sharpe of 1.27 — identical to equal weighting. The additional return was compensation for additional risk, not evidence of skill. Turnover is also substantial: the optimiser allocated 93% to XOM in January 2024 and 0% by December, with JNJ moving from nothing to 35% over the following year. Transaction costs are not modelled, so the realised figure would be lower.
 
-The pattern across all three is consistent: the modifications that improved results are those that pushed the portfolio closer to equal weighting. None surpassed it. This strengthens rather than qualifies the original finding and is consistent with DeMiguel, Garlappi & Uppal (2009).
+The pattern is consistent: the modifications that improved results are those that pushed the portfolio closer to equal weighting. None surpassed it.
+
+## Limitations
+
+- Single test window; the lines are near-indistinguishable through 2024 and diverge only late, so the conclusion is sensitive to the test period chosen.
+- Five assets, US large-cap equities only.
+- No transaction costs or turnover modelling, which penalises the rolling strategy least and should penalise it most.
+- Fixed 4% risk-free rate.
 
 ## Remaining extensions
 
 Risk-parity and minimum-variance allocation, neither of which requires estimating expected returns; multiple non-overlapping test windows; explicit turnover costs applied to the rolling strategy; a larger asset universe, where shrinkage would be expected to matter more.
 
-Shrinkage estimation of the covariance matrix (Ledoit–Wolf), weight caps to force diversification, rolling-window re-optimization, and risk-parity or minimum-variance allocation as alternative objectives.
-
 ## Running it
 
-Open `portfolio_risk.ipynb` in Google Colab and run the cells in order. Requires `yfinance`, `pandas`, `numpy`, `scipy`, `matplotlib`.
+Open `portfolio_risk.ipynb` in Google Colab and run the cells in order. Requires `yfinance`, `pandas`, `numpy`, `scipy`, `scikit-learn`, `matplotlib`.
