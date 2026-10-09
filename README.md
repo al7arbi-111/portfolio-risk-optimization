@@ -62,6 +62,34 @@ This reproduces a documented finding: DeMiguel, Garlappi & Uppal (2009), *Optima
 
 ## Possible extensions
 
+## Testing the proposed extensions
+
+The three fixes suggested above were implemented and tested on the same out-of-sample split: weights fitted on 2021–2023, evaluated on 2024–2025.
+
+| | Return | Volatility | Sharpe | Max drawdown |
+|---|---|---|---|---|
+| Original optimised | 15.36% | 16.24% | 0.70 | −16.11% |
+| Ledoit-Wolf shrinkage | 15.36% | 16.24% | 0.70 | −16.11% |
+| Capped at 30% | 20.68% | 13.87% | 1.20 | **−13.83%** |
+| Equal weight | 21.68% | 13.93% | **1.27** | −16.01% |
+| Rolling monthly | **28.79%** | 19.55% | 1.27 | −21.15% |
+
+![Extension comparison](extensions_comparison.png)
+
+**None of the three fixes beat equal weighting on a risk-adjusted basis.**
+
+**Ledoit-Wolf shrinkage changed nothing.** The estimated shrinkage intensity was 0.021 — a 2% adjustment — and the resulting weights and performance were identical to the original to four significant figures. With five assets and 752 observations the sample covariance matrix is already adequately conditioned; shrinkage addresses covariance estimation error, while the instability here originates in the expected-return estimates, which the method does not touch.
+
+**Weight caps recovered most of the lost performance.** Constraining each holding to 30% raised the Sharpe from 0.70 to 1.20 and produced the lowest drawdown of any allocation tested at −13.83%. This confirms concentration as the failure mechanism rather than the optimisation procedure itself. It still fell short of equal weighting, which is unsurprising: a weight cap is a partial move toward 1/N, and the complete version performed better.
+
+**Rolling re-optimisation produced the highest return and no risk-adjusted improvement.** Monthly re-fitting on a trailing two-year window returned 28.79%, but at 19.55% volatility and a −21.15% drawdown, for a Sharpe of 1.27 — identical to equal weighting. The additional return was compensation for additional risk, not evidence of skill. Turnover is also substantial: the optimiser allocated 93% to XOM in January 2024 and 0% by December, with JNJ moving from nothing to 35% over the following year. Transaction costs are not modelled, so the realised figure would be lower.
+
+The pattern across all three is consistent: the modifications that improved results are those that pushed the portfolio closer to equal weighting. None surpassed it. This strengthens rather than qualifies the original finding and is consistent with DeMiguel, Garlappi & Uppal (2009).
+
+## Remaining extensions
+
+Risk-parity and minimum-variance allocation, neither of which requires estimating expected returns; multiple non-overlapping test windows; explicit turnover costs applied to the rolling strategy; a larger asset universe, where shrinkage would be expected to matter more.
+
 Shrinkage estimation of the covariance matrix (Ledoit–Wolf), weight caps to force diversification, rolling-window re-optimization, and risk-parity or minimum-variance allocation as alternative objectives.
 
 ## Running it
